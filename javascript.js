@@ -5,7 +5,7 @@
 (function(){  
   const ps = {
     cssId: 'wm-mega-announcement',
-    cssFile: 'https://assets.codepen.io/3198845/MegaAnnouncementBarTESTING.css'
+    cssFile: 'https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/megaAnnouncementBar@1.0.001/styles.min.css'
   };
   const defaults = {
   };
