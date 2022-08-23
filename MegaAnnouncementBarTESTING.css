@@ -1,0 +1,167 @@
+/*This Code is Licensed by Will-Myers.com*/
+body:not(.sqs-edit-mode-active) .footer-announcement-bar-section{
+  display:none;
+}
+.sqs-announcement-bar-dropzone{
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.sqs-announcement-bar-dropzone.loaded{
+  opacity: 1;
+}
+.wm-custom-announcement-bar .sqs-announcement-bar {
+  text-align: unset;
+}
+.wm-custom-announcement-bar .sqs-announcement-bar-text {
+  padding: 0;
+}
+
+.announcement-bar-section {
+  min-height: unset !important;
+  transition: height .3s ease;
+  overflow:hidden;
+  will-change:height;
+}
+.announcement-bar-section {
+  transition: height .3s ease, 
+    opacity .5s cubic-bezier(.445,.05,.55,.95),
+    filter .5s cubic-bezier(.445,.05,.55,.95)  !important;
+}
+.announcement-bar-section .content-wrapper{
+  display:flex;
+  opacity: 0;
+  transition: opacity .3s ease;
+  will-change:opacity;
+  max-height: var(--announcement-max-height, 70vh);
+  overflow: scroll;
+}
+.announcement-bar-section.open .content-wrapper{
+  opacity: 1;
+}
+
+.wm-custom-announcement-bar #announcement-bar-text-inner-id {
+  padding: var(--v-padding, 1em) var(--h-padding, 3em);
+  box-sizing:border-box;
+  display: var(--announcement-text, flex);
+  justify-content:center;
+  gap:17px;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  text-align: center;
+  z-index:1;
+}
+div#announcement-bar-text-inner-id:after{
+  content: '';
+  width: var(--icon-size, 20px);
+  display: block;
+  position: relative;
+}
+.wm-custom-announcement-bar #announcement-bar-text-inner-id .dropdown-arrow{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding:0;
+}
+.wm-custom-announcement-bar #announcement-bar-text-inner-id svg{
+  width: var(--icon-size, 18px);
+  height: var(--icon-size, 18px);
+}
+.wm-custom-announcement-bar #announcement-bar-text-inner-id path{
+  stroke: var(--icon-color, var(--section-color, black));
+  stroke-width: var(--icon-width, 6px);
+}
+.wm-custom-announcement-bar #announcement-bar-text-inner-id p{
+  display: grid;
+  place-items: center;
+  color: var(--announcement-text-color, var(--section-color, inherit));
+  margin:0;
+  line-height:1;
+}
+.wm-custom-announcement-bar #announcement-bar-text-inner-id p a{
+  color: var(--announcement-text-color, var(--section-color, inherit));
+}
+.wm-custom-announcement-bar .sqs-announcement-bar-close{
+  z-index: 99;
+  background-color: var(--announcement-close-bkg, transparent);
+  display:grid;
+  place-items:center;
+  width:2em;
+  height:2em;
+  top: 50%;
+  right: 0.8em;
+  border-radius: 50%;
+  color: var(--announcement-close-color, var(--section-color, inherit)) !important;
+  line-height:0;
+  transform: translateY(-50%);
+}
+.wm-custom-announcement-bar .sqs-announcement-bar-close:after {
+  display:none;
+}
+
+
+
+/*Open Angle Transition*/
+@supports (d: path('M4 19 l28 26 L60 19')) {
+  .wm-custom-announcement-bar #announcement-bar-text-inner-id path {
+    d: path('M4 19 l28 26 L60 19');
+    transition: d .6s ease-in-out;
+  }
+  .wm-custom-announcement-bar #announcement-bar-text-inner-id .open path {
+    d: path('M4 45 l28 -26 L60 45');
+  }
+}
+@supports not (d: path('M4 19 l28 26 L60 19')) {
+  .wm-custom-announcement-bar #announcement-bar-text-inner-id path {
+    transform: rotate(0deg);
+    transform-origin: 50% 50%;
+    will-change:transform;
+    transition: transform .5s ease;
+  }
+  .wm-custom-announcement-bar #announcement-bar-text-inner-id .open path {
+    transform: rotate(180deg);
+  }
+}
+
+/*Fix Image Issue*/
+.announcement-bar-section .sqs-block-image img.loaded, 
+.announcement-bar-section .section-background img {
+  --position: 50% 50%;
+  height: 100%;
+  width: 100%;
+  visibility: visible;
+  object-fit:cover;
+  object-position: var(--position);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/*Hide Code Block*/
+body:not(.sqs-edit-mode-active) .sqs-block.hide-block {
+  display:none;
+}
+
+/*Fix Global Animation Issue*/
+.announcement-bar-section .preFade, 
+.announcement-bar-section .preScale, 
+.announcement-bar-section .preSlide, 
+.announcement-bar-section .preClip, 
+.announcement-bar-section .preFade, 
+.announcement-bar-section .preScale, 
+.announcement-bar-section .preSlide, 
+.announcement-bar-section .preClip, 
+.announcement-bar-section .animation-segment-parent-hidden, 
+.announcement-bar-section .preFlex, 
+.announcement-bar-section .preClip{
+  opacity:1 !important;  
+  transform: scale(1) translate(0%,0%) !important;
+  clip-path: unset !important;
+}
+.announcement-bar-section .sqs-block-summary-v2 .img-wrapper img, 
+.announcement-bar-section .sqs-block-summary-v2 .sqs-video-wrapper img{
+  opacity: 1 !important;
+}
