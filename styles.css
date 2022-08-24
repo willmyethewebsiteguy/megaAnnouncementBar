@@ -33,7 +33,7 @@ body:not(.sqs-edit-mode-active) .footer-announcement-bar-section{
   transition: opacity .3s ease;
   will-change:opacity;
   max-height: var(--announcement-max-height, 70vh);
-  overflow: scroll;
+  overflow: auto;
 }
 .announcement-bar-section.open .content-wrapper{
   opacity: 1;
