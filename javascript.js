@@ -6,7 +6,7 @@
 (function(){  
   const ps = {
     cssId: 'wm-mega-announcement',
-    cssFile: 'https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/megaAnnouncementBar@1.0.003/styles.min.css'
+    cssFile: 'https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/megaAnnouncementBar@1.0.004/styles.min.css'
   };
   const defaults = {
   };
