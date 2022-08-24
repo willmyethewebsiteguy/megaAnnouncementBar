@@ -64,36 +64,37 @@ div#announcement-bar-text-inner-id:after{
   background: none;
   border: none;
   padding:0;
+  color: currentColor;
 }
 .wm-custom-announcement-bar #announcement-bar-text-inner-id svg{
   width: var(--icon-size, 18px);
   height: var(--icon-size, 18px);
 }
 .wm-custom-announcement-bar #announcement-bar-text-inner-id path{
-  stroke: var(--icon-color, var(--section-color, black));
+  stroke: var(--icon-color, var(--color, currentColor));
   stroke-width: var(--icon-width, 6px);
 }
 .wm-custom-announcement-bar #announcement-bar-text-inner-id p{
   display: grid;
   place-items: center;
-  color: var(--announcement-text-color, var(--section-color, inherit));
+  color: var(--announcement-text-color, var(--color, currentColor));
   margin:0;
   line-height:1;
 }
 .wm-custom-announcement-bar #announcement-bar-text-inner-id p a{
-  color: var(--announcement-text-color, var(--section-color, inherit));
+  color: var(--announcement-text-color, var(--color, currentColor));
 }
 .wm-custom-announcement-bar .sqs-announcement-bar-close{
   z-index: 99;
   background-color: var(--announcement-close-bkg, transparent);
-  display:grid;
+  display:var(--announcement-close, grid);
   place-items:center;
   width:2em;
   height:2em;
   top: 50%;
   right: 0.8em;
   border-radius: 50%;
-  color: var(--announcement-close-color, var(--section-color, inherit)) !important;
+  color: var(--announcement-close-color, var(--color, currentColor)) !important;
   line-height:0;
   transform: translateY(-50%);
 }
