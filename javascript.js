@@ -6,7 +6,7 @@
 (function(){  
   const ps = {
     cssId: 'wm-mega-announcement',
-    cssFile: 'https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/megaAnnouncementBar@1.0.002/styles.min.css'
+    cssFile: 'https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/megaAnnouncementBar@1.0.003/styles.min.css'
   };
   const defaults = {
   };
@@ -180,7 +180,7 @@
       
       //Paragraph Color
       let sectionColor = utils.getPropertyValue(section, 'color');
-      clone.style.setProperty('--section-color', sectionColor)
+      clone.parentElement.style.setProperty('--color', sectionColor)
 
       //Background Color
       clone.querySelector('.section-background').style.background = utils.getPropertyValue(section.querySelector('.section-background'), 'background-color');
