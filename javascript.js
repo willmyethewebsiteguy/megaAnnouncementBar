@@ -3,10 +3,11 @@
  * Version 1
  * This Code is licensed by Will-Myers.com 
 ========== */
+
 (function(){  
   const ps = {
     cssId: 'wm-mega-announcement',
-    cssFile: 'https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/megaAnnouncementBar@1.1.002/styles.min.css'
+    cssFile: 'https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/megaAnnouncementBar@1.1.003/styles.min.css'
   };
   const defaults = {
   };
@@ -152,16 +153,19 @@
           abText = instance.settings.abText,
           innerTextEl = instance.settings.innerText,
           container = instance.settings.container,
-          //sectionClone = section.cloneNode(true),
+          sectionClone = section.cloneNode(),
           closeBtn = instance.settings.closeBtn;
+      
+      console.log(sectionClone);
 
       aBDropzone.classList.add('wm-custom-announcement-bar', 'loaded');
+      section.insertAdjacentElement('afterend', sectionClone);
+      sectionClone.style.display = 'none';
       container.append(section);
       section.prepend(innerTextEl);
       innerTextEl.prepend(closeBtn);
       closeBtn.innerHTML = '×';
       section.classList.add('announcement-bar-section');
-      //section.classList.remove('footer-announcement-bar-section');
       abText.classList.remove('sqs-announcement-bar-text');
 
       utils.loadImages(section);
@@ -210,7 +214,8 @@
       instance.settings.abText.classList.add('sqs-announcement-bar-text');
       section.insertAdjacentElement('beforebegin', innerText);
       if (footer.children[index]) {
-        footer.children[index].insertAdjacentElement('afterend', section);
+        footer.children[index].insertAdjacentElement('beforebegin', section);
+        footer.children[index + 1].remove();
       } else {
         footer.append(section);
       }
@@ -233,9 +238,6 @@
         section: el,
         footerIndex: 0,
         abText: document.querySelector('.sqs-announcement-bar-text'),
-        /*get sectionClone(){
-          return document.querySelector('.announcement-bar-section')
-        },*/
         get aBDropzone() {
           return document.querySelector('.sqs-announcement-bar-dropzone')
         },
@@ -303,8 +305,6 @@
   footerSections.forEach(section => {
     let isTrue = utils.getPropertyValue(section, '--mega-announcement');
     if (isTrue !== 'true') return;
-
-    //section.classList.add('footer-announcement-bar-section');
 
     const observer = new MutationObserver(function(mutations_list) {
       mutations_list.forEach(function(mutation) {
