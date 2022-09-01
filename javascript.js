@@ -6,7 +6,7 @@
 (function(){  
   const ps = {
     cssId: 'wm-mega-announcement',
-    cssFile: 'https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/megaAnnouncementBar@1.0.004/styles.min.css'
+    cssFile: 'https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/megaAnnouncementBar@1.1.001/styles.min.css'
   };
   const defaults = {
   };
@@ -107,7 +107,7 @@
          </svg>
       </button>`,
           innerText = instance.settings.innerText,
-          section = instance.settings.sectionClone,
+          section = instance.settings.section,
           contentWrapper = section.querySelector('.content-wrapper'),
           height;
       
@@ -152,19 +152,19 @@
           abText = instance.settings.abText,
           innerTextEl = instance.settings.innerText,
           container = instance.settings.container,
-          sectionClone = section.cloneNode(true),
+          //sectionClone = section.cloneNode(true),
           closeBtn = instance.settings.closeBtn;
 
       aBDropzone.classList.add('wm-custom-announcement-bar', 'loaded');
-      container.append(sectionClone);
-      sectionClone.prepend(innerTextEl);
+      container.append(section);
+      section.prepend(innerTextEl);
       innerTextEl.prepend(closeBtn);
       closeBtn.innerHTML = '×';
-      sectionClone.classList.add('announcement-bar-section');
-      sectionClone.classList.remove('footer-announcement-bar-section');
+      section.classList.add('announcement-bar-section');
+      //section.classList.remove('footer-announcement-bar-section');
       abText.classList.remove('sqs-announcement-bar-text');
 
-      utils.loadImages(sectionClone);
+      utils.loadImages(section);
 
       //Global Init
       if (Squarespace) Squarespace.initializeLayoutBlocks(Y)
@@ -173,32 +173,56 @@
     function syncStyles(instance) {
       let siteWrapper = document.querySelector('.site-wrapper'),
           clone = instance.settings.sectionClone,
-          section = instance.settings.section;
+          section = instance.settings.section,
+          dropzone = instance.settings.aBDropzone; 
       
-      //Paragraph Line Height
-      clone.style.lineHeight = utils.getPropertyValue(siteWrapper, 'line-height');
+      //Set Paragraph Line Height
+      section.style.lineHeight = utils.getPropertyValue(siteWrapper, 'line-height');
       
       //Paragraph Color
       let sectionColor = utils.getPropertyValue(section, 'color');
-      clone.parentElement.style.setProperty('--color', sectionColor)
+      dropzone.style.setProperty('--color', sectionColor)
 
       //Background Color
-      clone.querySelector('.section-background').style.background = utils.getPropertyValue(section.querySelector('.section-background'), 'background-color');
+      section.querySelector('.section-background').style.background = utils.getPropertyValue(section.querySelector('.section-background'), 'background-color');
+    }
+
+    function setFooterIndex(instance) {
+      let section = instance.settings.section,
+          index = Array.from(
+            section.parentElement.children
+          ).indexOf(section);
+      
+      instance.settings.footerIndex = index;
     }
 
     /*Remove Section if Jumping into Edit Mode*/
-    function removeSection(instance) {
+    function returnSection(instance) {
       let section = document.querySelector('.announcement-bar-section'),
           aBDropzone = document.querySelector('.wm-custom-announcement-bar'),
           innerText = document.querySelector('#announcement-bar-text-inner-id'),
-          button = innerText.querySelector('button');
+          button = innerText.querySelector('button'),
+          footer = document.querySelector('#footer-sections'),
+          index = instance.settings.footerIndex;
+      
       if (!section) return;
 
       instance.settings.abText.classList.add('sqs-announcement-bar-text');
-      section.insertAdjacentElement('beforebegin', innerText)
-      section.remove();
+      section.insertAdjacentElement('beforebegin', innerText);
+      if (footer.children[index]) {
+        footer.children[index].insertAdjacentElement('afterend', section);
+      } else {
+        footer.append(section);
+      }
       button.remove();
-      aBDropzone.classList.remove('wm-custom-announcement-bar')
+      aBDropzone.classList.remove('wm-custom-announcement-bar');
+      section.classList.remove('announcement-bar-section');
+      section.classList.remove('close');
+      section.classList.remove('open');
+      section.style.height = '';
+      section.querySelector('.content-wrapper').style.display = '';
+      section.querySelector('.content-wrapper').style.paddingTop = '';
+      section.querySelector('.section-backgruond').style.background = '';
     }
 
     function Constructor(el, options = {}) {
@@ -207,10 +231,11 @@
       // Add Elements Obj
       this.settings = {
         section: el,
+        footerIndex: 0,
         abText: document.querySelector('.sqs-announcement-bar-text'),
-        get sectionClone(){
+        /*get sectionClone(){
           return document.querySelector('.announcement-bar-section')
-        },
+        },*/
         get aBDropzone() {
           return document.querySelector('.sqs-announcement-bar-dropzone')
         },
@@ -233,27 +258,29 @@
         }
       };
       
+      //Set Footer Index
+      setFooterIndex(this);
+      
+      //Sync Styles
+      syncStyles(this)
+      
       //Move Section to Announcement Bar
       moveSection(this);
       
       //Add Dropdown Arrow
       addDropdownArrow(this);
 
-      //Sync Styles
-      syncStyles(this)
-
+      //If In Backend, Watch for Edit Mode
       const editModeObserver = new MutationObserver(function(mutations_list) {
         mutations_list.forEach(function(mutation) {
           let classList = document.body.classList;
           if (mutation.attributeName === 'class' 
               && classList.contains('sqs-edit-mode-active')){
             editModeObserver.disconnect();
-            removeSection(instance);
+            returnSection(instance);
           }
         });
       });
-
-      //If In Backend, Watch for Edit Mode
       if(window.self !== window.top) {
         let options = {subtree: false, childList: false, attributes: true}
         editModeObserver.observe(document.body, options);
@@ -277,7 +304,7 @@
     let isTrue = utils.getPropertyValue(section, '--mega-announcement');
     if (isTrue !== 'true') return;
 
-    section.classList.add('footer-announcement-bar-section');
+    //section.classList.add('footer-announcement-bar-section');
 
     const observer = new MutationObserver(function(mutations_list) {
       mutations_list.forEach(function(mutation) {
