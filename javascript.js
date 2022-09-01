@@ -222,7 +222,7 @@
       section.style.height = '';
       section.querySelector('.content-wrapper').style.display = '';
       section.querySelector('.content-wrapper').style.paddingTop = '';
-      section.querySelector('.section-backgruond').style.background = '';
+      section.querySelector('.section-background').style.background = '';
     }
 
     function Constructor(el, options = {}) {
