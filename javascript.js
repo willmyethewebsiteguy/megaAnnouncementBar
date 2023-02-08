@@ -177,9 +177,6 @@
           section = instance.settings.section,
           dropzone = instance.settings.aBDropzone; 
       
-      //Set Paragraph Line Height
-      section.style.lineHeight = utils.getPropertyValue(siteWrapper, 'line-height');
-      
       //Paragraph Color
       let sectionColor = utils.getPropertyValue(section, 'color');
       dropzone.style.setProperty('--color', sectionColor)
