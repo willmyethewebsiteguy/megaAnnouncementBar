@@ -1,9 +1,7 @@
 /* ==========
- * Custom Announcement Bar
- * Version 1
+ * Mega Announcement Bar
  * This Code is licensed by Will-Myers.com 
 ========== */
-
 (function(){  
   const ps = {
     cssId: 'wm-mega-announcement',
@@ -155,8 +153,6 @@
           container = instance.settings.container,
           sectionClone = section.cloneNode(),
           closeBtn = instance.settings.closeBtn;
-      
-      console.log(sectionClone);
 
       aBDropzone.classList.add('wm-custom-announcement-bar', 'loaded');
       section.insertAdjacentElement('afterend', sectionClone);
@@ -166,6 +162,7 @@
       innerTextEl.prepend(closeBtn);
       closeBtn.innerHTML = '×';
       section.classList.add('announcement-bar-section');
+      section.classList.add('siteWrapper');
       abText.classList.remove('sqs-announcement-bar-text');
 
       utils.loadImages(section);
