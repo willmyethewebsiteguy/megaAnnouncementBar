@@ -162,7 +162,7 @@
       innerTextEl.prepend(closeBtn);
       closeBtn.innerHTML = '×';
       section.classList.add('announcement-bar-section');
-      section.classList.add('siteWrapper');
+      section.classList.add('site-wrapper');
       abText.classList.remove('sqs-announcement-bar-text');
 
       utils.loadImages(section);
