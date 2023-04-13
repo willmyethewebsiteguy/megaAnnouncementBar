@@ -105,14 +105,24 @@
           <path data-name="layer1" fill="none" stroke="#202020" stroke-miterlimit="10" stroke-width="2" d="M4 19 l28 26 L60 19" stroke-linejoin="round" stroke-linecap="round"></path>
          </svg>
       </button>`,
-          innerText = instance.settings.innerText,
-          section = instance.settings.section,
-          contentWrapper = section.querySelector('.content-wrapper'),
-          height;
+        header = instance.settings.header,
+        isClickable = instance.settings.clickableArea,
+        clickableArea = `<a href="#" class="dropdown-toggle-area"></a>`,
+        innerText = instance.settings.innerText,
+        section = instance.settings.section,
+        contentWrapper = section.querySelector('.content-wrapper'),
+        height;
       
       innerText.insertAdjacentHTML('afterbegin', arrow);
+      innerText.insertAdjacentHTML('afterbegin', clickableArea);
+
+      if (isClickable) {
+        console.log(isClickable)
+        header.classList.add('ab-entire-area');
+      }
       
       function closeAccordion(){
+        header.classList.remove('announcement-bar-open');
         contentWrapper.style.display = 'none';
         height = innerText.getBoundingClientRect().height;
         section.style.height = height + 'px';
@@ -120,8 +130,11 @@
         section.classList.remove('open');
         instance.settings.dropdownArrow.classList.add('close');
         instance.settings.dropdownArrow.classList.remove('open');
+        instance.settings.dropdownToggleArea.classList.add('close');
+        instance.settings.dropdownToggleArea.classList.remove('open');
       }
       function openAccordion(){
+        header.classList.add('announcement-bar-open');
         contentWrapper.style.display = 'flex';
         contentWrapper.style.paddingTop = (innerText.getBoundingClientRect().height + parseInt(utils.getPropertyValue(contentWrapper, 'padding-bottom'))) + 'px';
         let height = contentWrapper.getBoundingClientRect().height;
@@ -130,16 +143,20 @@
         section.classList.remove('close');
         instance.settings.dropdownArrow.classList.add('open')
         instance.settings.dropdownArrow.classList.remove('close')
+        instance.settings.dropdownToggleArea.classList.add('open')
+        instance.settings.dropdownToggleArea.classList.remove('close')
       }
       
       function toggleAccordion(e) {
-        if (e.target.closest('button').classList.contains('open')){
+        if (!e.target.closest('#header')) return;
+        if (e.target.closest('#header').classList.contains('announcement-bar-open')) {
           closeAccordion()
         } else {
           openAccordion();
         }
       }
-
+      
+      instance.settings.dropdownToggleArea.addEventListener('click', toggleAccordion);
       instance.settings.dropdownArrow.addEventListener('click', toggleAccordion);
       instance.settings.isOpen ? openAccordion() : closeAccordion();
     }
@@ -157,7 +174,7 @@
       aBDropzone.classList.add('wm-custom-announcement-bar', 'loaded');
       section.insertAdjacentElement('afterend', sectionClone);
       sectionClone.style.display = 'none';
-      container.append(section);
+      container?.append(section);
       section.prepend(innerTextEl);
       innerTextEl.prepend(closeBtn);
       closeBtn.innerHTML = '×';
@@ -247,10 +264,21 @@
         get dropdownArrow() {
           return this.innerText.querySelector('.dropdown-arrow')
         },
+        get dropdownToggleArea() {
+          return this.innerText.querySelector('.dropdown-toggle-area')
+        },
+        get header() {
+          return document.querySelector('#header');
+        },
         get isOpen() {
           let isOpen = utils.getPropertyValue(this.section, '--is-open');
           isOpen === 'true' ? isOpen = true : isOpen = false;
           return isOpen;
+        },
+        get clickableArea() {
+          let val = utils.getPropertyValue(this.section, '--clickable-area');
+          val = val.includes('true') ? true : false;
+          return val;
         }
       };
       
