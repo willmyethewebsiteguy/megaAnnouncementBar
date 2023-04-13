@@ -59,6 +59,7 @@ div#announcement-bar-text-inner-id:after{
 }
 .wm-custom-announcement-bar .dropdown-toggle-area{
   display:none;
+  z-index:1;
 }
 .ab-entire-area .wm-custom-announcement-bar #announcement-bar-text-inner-id .dropdown-toggle-area{
   display:block;
