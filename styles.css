@@ -57,6 +57,17 @@ div#announcement-bar-text-inner-id:after{
   display: block;
   position: relative;
 }
+.wm-custom-announcement-bar .dropdown-toggle-area{
+  display:none;
+}
+.ab-entire-area .wm-custom-announcement-bar #announcement-bar-text-inner-id .dropdown-toggle-area{
+  display:block;
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+}
 .wm-custom-announcement-bar #announcement-bar-text-inner-id .dropdown-arrow{
   display: flex;
   align-items: center;
@@ -101,8 +112,6 @@ div#announcement-bar-text-inner-id:after{
 .wm-custom-announcement-bar .sqs-announcement-bar-close:after {
   display:none;
 }
-
-
 
 /*Open Angle Transition*/
 @supports (d: path('M4 19 l28 26 L60 19')) {
