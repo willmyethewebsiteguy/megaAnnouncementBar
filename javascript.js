@@ -327,19 +327,24 @@
   footerSections.forEach(section => {
     let isTrue = utils.getPropertyValue(section, '--mega-announcement');
     if (isTrue !== 'true') return;
+    section.classList.add('announcement-bar-footer-section')
 
     const observer = new MutationObserver(function(mutations_list) {
       mutations_list.forEach(function(mutation) {
-        if (mutation.addedNodes.length !== 0){
+        if (mutation.addedNodes.length !== 0) {
           new MegaAnnouncementBar(section)
           observer.disconnect();
         }
       });
     });
-    observer.observe(aBDropzone, { subtree: false, childList: true, attributes: false});
-  })
+    observer.observe(aBDropzone, { 
+      subtree: false, 
+      childList: true, 
+      attributes: false
+    });
+  });
   
-  window.setTimeout(function(){
+  window.setTimeout(function() {
     aBDropzone?.classList.add('loaded')
   }, 300);
 }());
