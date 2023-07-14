@@ -16,6 +16,31 @@ body:not(.sqs-edit-mode-active) .footer-announcement-bar-section{
   padding: 0;
 }
 
+body:not(.sqs-edit-mode-active) #footer-sections .announcement-bar-footer-section{
+  display:none;
+}
+body.sqs-edit-mode-active #footer-sections .announcement-bar-footer-section::before{
+  content: 'Announcement Bar Section';
+  position: absolute;
+  font-size: 10px;
+  top: 20px;
+  padding: 0px 4px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  left: 50%;
+  transform:translateX(-50%);
+  background:#4669be;
+  color:white;
+  box-sizing: border-box;
+  text-align: center;
+  opacity: 1;
+  transition: opacity .2s ease;
+  z-index:9;
+}
+body.sqs-edit-mode-active #footer-sections .announcement-bar-footer-section:hover::before{
+  opacity: 0;
+}
+
 .announcement-bar-section {
   min-height: unset !important;
   transition: height .3s ease;
