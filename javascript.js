@@ -100,7 +100,8 @@
     
     function addDropdownArrow(instance) {
       let arrow = `<button class="dropdown-arrow">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-labelledby="title" role="img" xmlns:xlink="http://www.w3.org/1999/xlink">
+          <title>Toggle Announcement Bar</title>
           <path data-name="layer1" fill="none" stroke="#202020" stroke-miterlimit="10" stroke-width="2" d="M4 19 l28 26 L60 19" stroke-linejoin="round" stroke-linecap="round"></path>
          </svg>
       </button>`,
@@ -157,7 +158,11 @@
       
       instance.settings.dropdownToggleArea.addEventListener('click', toggleAccordion);
       instance.settings.dropdownArrow.addEventListener('click', toggleAccordion);
-      instance.settings.isOpen ? openAccordion() : closeAccordion();
+      if (window.innerWidth < 767) {
+        instance.settings.mobileIsOpen ? openAccordion() : closeAccordion();
+      } else {
+        instance.settings.isOpen ? openAccordion() : closeAccordion();
+      }
     }
 
     function moveSection(instance) {
@@ -273,6 +278,11 @@
           let isOpen = utils.getPropertyValue(this.section, '--is-open');
           isOpen === 'true' ? isOpen = true : isOpen = false;
           return isOpen;
+        },
+        get mobileIsOpen() {
+          let mobileIsOpen = utils.getPropertyValue(this.section, '--mobile-is-open');
+          mobileIsOpen === 'false' ? mobileIsOpen = false : mobileIsOpen = true;
+          return mobileIsOpen;
         },
         get clickableArea() {
           let val = utils.getPropertyValue(this.section, '--clickable-area');
