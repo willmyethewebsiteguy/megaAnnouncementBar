@@ -97,7 +97,6 @@
   }
 
   let MegaAnnouncementBar = (function(){
-    
     function addDropdownArrow(instance) {
       let arrow = `<button class="dropdown-arrow">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-labelledby="title" role="img" xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -281,7 +280,7 @@
         },
         get mobileIsOpen() {
           let mobileIsOpen = utils.getPropertyValue(this.section, '--mobile-is-open');
-          mobileIsOpen === 'false' ? mobileIsOpen = false : mobileIsOpen = true;
+          mobileIsOpen === 'true' ? mobileIsOpen = true : mobileIsOpen = false;
           return mobileIsOpen;
         },
         get clickableArea() {
