@@ -44,6 +44,7 @@ body.sqs-edit-mode-active #footer-sections .announcement-bar-footer-section:hove
 .announcement-bar-section {
   min-height: unset !important;
   transition: height .3s ease;
+  padding-top: 0 !important;
   overflow:hidden;
   will-change:height;
 }
