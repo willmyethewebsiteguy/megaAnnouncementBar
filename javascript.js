@@ -1,358 +1,548 @@
-/* ==========
- * Mega Announcement Bar
- * This Code is licensed by Will-Myers.com 
-========== */
-(function(){  
-  const ps = {
-    cssId: 'wm-mega-announcement',
-    cssFile: 'https://cdn.jsdelivr.net/gh/willmyethewebsiteguy/megaAnnouncementBar@1/styles.min.css'
-  };
-  const defaults = {
-  };
-  const utils = {
-    /* Emit a custom event */
-    emitEvent: function (type, detail = {}, elem = document) {
-      // Make sure there's an event type
-      if (!type) return;
+/**
+ * Mega Announcement Bar Plugin for Squarespace
+ * Transforms a footer section into an expandable announcement bar
+ * Copyright Will-Myers.com
+ **/
 
-      // Create a new event
-      let event = new CustomEvent(type, {
+class WMMegaAnnouncementBar {
+  // Static properties
+  static pluginName = "mega-announcement-bar";
+  static instances = [];
+  static originalPositions = new Map();
+  static isEditModeObserverSet = false;
+
+  // Default settings - can be overridden via JS or CSS custom properties
+  static defaultSettings = {
+    isOpen: false,
+    mobileIsOpen: false,
+    clickableArea: false,
+    dropdownArrowHtml: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-labelledby="title" role="img">
+      <title>Toggle Announcement Bar</title>
+      <path data-name="layer1" fill="none" stroke="currentColor" stroke-miterlimit="10" stroke-width="2" d="M4 19 l28 26 L60 19" stroke-linejoin="round" stroke-linecap="round"></path>
+    </svg>`,
+  };
+
+  // Static method to emit custom events
+  static emitEvent(type, detail = {}, elem = document) {
+    elem.dispatchEvent(
+      new CustomEvent(`wm-${this.pluginName}${type}`, {
+        detail,
         bubbles: true,
-        cancelable: true,
-        detail: detail,
-      });
+      })
+    );
+  }
 
-      // Dispatch the event
-      return elem.dispatchEvent(event);
-    },
-    inIframe: function () {
-      try {
-        return window.self !== window.top;
-      } catch (e) {
-        return true;
-      }
-    },
-    preventPlugin: function(){
-      let styles = window.getComputedStyle(document.body),
-          prevent = (styles.getPropertyValue(`--${ps.id}-edit-mode`) === 'true');
-
-      return (prevent && utils.inIframe());
-    },
-    loadImages: function(container){
-      let images = container.querySelectorAll('.summary-v2-block img, .sqs-block-image img, .section-background img');
-      images.forEach(img => {
-
-        img.classList.add('loaded');
-        let imgData = img.dataset,
-            focalPoint = imgData.imageFocalPoint,
-            parentRation = imgData.parentRatio,
-            src = img.src;
-        if (focalPoint) {
-          let x = focalPoint.split(',')[0] * 100,
-              y = focalPoint.split(',')[1] * 100;
-          img.style.setProperty('--position', `${x}% ${y}%`)
-        }
-        if (!src) {
-          img.src = imgData.src
+  // Static method to deconstruct all instances (for edit mode)
+  static deconstruct() {
+    WMMegaAnnouncementBar.instances.forEach(instance => {
+      if (instance && typeof instance.destroy === "function") {
+          instance.destroy();
         }
       });
-    },
-    debounce: function (fn) {
-      // Setup a timer
-      let timeout;
+      
+      // Clear instances array
+    WMMegaAnnouncementBar.instances = [];
+      
+      // Clear original positions map
+    WMMegaAnnouncementBar.originalPositions.clear();
 
-      // Return a function to run debounced
-      return function () {
-        // Setup the arguments
-        let context = this;
-        let args = arguments;
+    // Reset observer flag so it can be set up again if needed
+    WMMegaAnnouncementBar.isEditModeObserverSet = false;
+  }
 
-        // If there's a timer, cancel it
-        if (timeout) {
-          window.cancelAnimationFrame(timeout);
+  // Static method to set up edit mode observer (only once)
+  static addEditModeObserver() {
+    const isBackend = window.self !== window.top;
+    if (WMMegaAnnouncementBar.isEditModeObserverSet || !isBackend) return;
+
+    const bodyObserver = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        if (mutation.attributeName === "class") {
+          if (document.body.classList.contains("sqs-edit-mode-active")) {
+            WMMegaAnnouncementBar.deconstruct();
+            bodyObserver.disconnect();
+          }
         }
+      });
+    });
 
-        // Setup the new requestAnimationFrame()
-        timeout = window.requestAnimationFrame(function () {
-          fn.apply(context, args);
-        });
-      }
-    },
-    getPropertyValue: function(el, prop) {
-      let styles = window.getComputedStyle(el),
-          value = styles.getPropertyValue(prop);
-      return value;
-    },
-    unescapeSlashes: function(str) {
-      let parsedStr = str.replace(/(^|[^\\])(\\\\)*\\$/, "$&\\");
-      parsedStr = parsedStr.replace(/(^|[^\\])((\\\\)*")/g, "$1\\$2");
+    bodyObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
 
-      try {
-        parsedStr = JSON.parse(`"${parsedStr}"`);
-      } catch(e) {
-        return str;
+    WMMegaAnnouncementBar.isEditModeObserverSet = true;
+  }
+
+  // Static utility: get CSS property value
+  static getPropertyValue(el, prop) {
+    return window.getComputedStyle(el).getPropertyValue(prop).trim();
+  }
+
+  // Static utility: load images
+  static loadImages(container) {
+    const images = container.querySelectorAll(
+      ".summary-v2-block img, .sqs-block-image img, .section-background img"
+    );
+    images.forEach(img => {
+      img.classList.add("loaded");
+      const imgData = img.dataset;
+      const focalPoint = imgData.imageFocalPoint;
+      const src = img.src;
+
+      if (focalPoint) {
+        const x = focalPoint.split(",")[0] * 100;
+        const y = focalPoint.split(",")[1] * 100;
+        img.style.setProperty("--position", `${x}% ${y}%`);
       }
-      return parsedStr ;
+      if (!src && imgData.src) {
+        img.src = imgData.src;
+      }
+    });
+  }
+
+  constructor(el, settings = {}) {
+    this.el = el; // The footer section element
+    this.isBackend = window.self !== window.top;
+
+    // Start with default settings
+    this.settings = { ...WMMegaAnnouncementBar.defaultSettings };
+
+    // Elements object - populated during init
+    this.elements = {};
+
+    // Event handlers storage for cleanup
+    this._eventHandlers = {};
+
+    // Store passed settings for later merge (after CSS extraction)
+    this._passedSettings = settings;
+
+    this.init();
+  }
+
+  init() {
+    WMMegaAnnouncementBar.emitEvent(":beforeInit", { el: this.el }, this.el);
+
+    // Cache DOM elements
+    this.cacheElements();
+
+    // Validate required elements exist
+    if (!this.elements.aBDropzone) {
+      console.warn(`[${WMMegaAnnouncementBar.pluginName}] Announcement bar dropzone not found`);
+      return;
+    }
+
+    // Add classes BEFORE extracting settings (users target .announcement-bar-section in CSS)
+    this.el.dataset.wmPlugin = WMMegaAnnouncementBar.pluginName;
+    this.el.classList.add("announcement-bar-footer-section", "announcement-bar-section");
+
+    // Extract settings from CSS custom properties (now the class is applied)
+    this.extractSettings();
+
+    // Sync styles before moving
+    this.syncStyles();
+
+    // Move section to announcement bar
+    this.moveSection();
+
+    // Build dropdown controls
+    this.buildDropdownControls();
+
+    // Bind events
+    this.bindEvents();
+
+    // Set initial state
+    this.setInitialState();
+
+    // Add to instances
+    WMMegaAnnouncementBar.instances.push(this);
+
+    // Attach to element for external access
+    this.el.wmMegaAnnouncementBar = this;
+
+    // Set up edit mode observer
+    WMMegaAnnouncementBar.addEditModeObserver();
+
+    WMMegaAnnouncementBar.emitEvent(":afterInit", { el: this.el }, this.el);
+  }
+
+  cacheElements() {
+    this.elements = {
+      section: this.el,
+      header: document.querySelector("#header"),
+      aBDropzone: document.querySelector(".sqs-announcement-bar-dropzone"),
+      abText: document.querySelector(".sqs-announcement-bar-text"),
+      contentWrapper: this.el.querySelector(".content-wrapper"),
+      sectionBackground: this.el.querySelector(".section-background"),
+    };
+
+    // Elements that depend on aBDropzone
+    if (this.elements.aBDropzone) {
+      this.elements.innerText = this.elements.aBDropzone.querySelector("#announcement-bar-text-inner-id");
+      this.elements.container = this.elements.aBDropzone.querySelector(".sqs-announcement-bar-text");
+      this.elements.closeBtn = document.querySelector(".sqs-announcement-bar-close");
     }
   }
 
-  let MegaAnnouncementBar = (function(){
-    function addDropdownArrow(instance) {
-      let arrow = `<button class="dropdown-arrow">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-labelledby="title" role="img" xmlns:xlink="http://www.w3.org/1999/xlink">
-          <title>Toggle Announcement Bar</title>
-          <path data-name="layer1" fill="none" stroke="#202020" stroke-miterlimit="10" stroke-width="2" d="M4 19 l28 26 L60 19" stroke-linejoin="round" stroke-linecap="round"></path>
-         </svg>
-      </button>`,
-        header = instance.settings.header,
-        isClickable = instance.settings.clickableArea,
-        clickableArea = `<a href="#" class="dropdown-toggle-area"></a>`,
-        innerText = instance.settings.innerText,
-        section = instance.settings.section,
-        contentWrapper = section.querySelector('.content-wrapper'),
-        height;
-      
-      innerText.insertAdjacentHTML('afterbegin', arrow);
-      innerText.insertAdjacentHTML('afterbegin', clickableArea);
+  extractSettings() {
+    const section = this.el;
 
-      if (isClickable) {
-        console.log(isClickable)
-        header.classList.add('ab-entire-area');
-      }
-      
-      function closeAccordion(){
-        header.classList.remove('announcement-bar-open');
-        contentWrapper.style.display = 'none';
-        height = innerText.getBoundingClientRect().height;
-        section.style.height = height + 'px';
-        section.classList.add('close');
-        section.classList.remove('open');
-        instance.settings.dropdownArrow.classList.add('close');
-        instance.settings.dropdownArrow.classList.remove('open');
-        instance.settings.dropdownToggleArea.classList.add('close');
-        instance.settings.dropdownToggleArea.classList.remove('open');
-      }
-      function openAccordion(){
-        header.classList.add('announcement-bar-open');
-        contentWrapper.style.display = 'flex';
-        contentWrapper.style.paddingTop = (innerText.getBoundingClientRect().height + parseInt(utils.getPropertyValue(contentWrapper, 'padding-bottom'))) + 'px';
-        let height = contentWrapper.getBoundingClientRect().height;
-        section.style.height = height + 'px';
-        section.classList.add('open');
-        section.classList.remove('close');
-        instance.settings.dropdownArrow.classList.add('open')
-        instance.settings.dropdownArrow.classList.remove('close')
-        instance.settings.dropdownToggleArea.classList.add('open')
-        instance.settings.dropdownToggleArea.classList.remove('close')
-      }
-      
-      function toggleAccordion(e) {
-        if (!e.target.closest('#header')) return;
-        if (e.target.closest('#header').classList.contains('announcement-bar-open')) {
-          closeAccordion()
-        } else {
-          openAccordion();
-        }
-      }
-      
-      instance.settings.dropdownToggleArea.addEventListener('click', toggleAccordion);
-      instance.settings.dropdownArrow.addEventListener('click', toggleAccordion);
-      if (window.innerWidth < 767) {
-        instance.settings.mobileIsOpen ? openAccordion() : closeAccordion();
-      } else {
-        instance.settings.isOpen ? openAccordion() : closeAccordion();
-      }
-    }
-
-    function moveSection(instance) {
-      let section = instance.settings.section,
-          aBDropzone = instance.settings.aBDropzone,
-          aBar = aBDropzone.querySelector('.sqs-announcement-bar'),
-          abText = instance.settings.abText,
-          innerTextEl = instance.settings.innerText,
-          container = instance.settings.container,
-          sectionClone = section.cloneNode(),
-          closeBtn = instance.settings.closeBtn;
-
-      aBDropzone.classList.add('wm-custom-announcement-bar', 'loaded');
-      section.insertAdjacentElement('afterend', sectionClone);
-      sectionClone.style.display = 'none';
-      container?.append(section);
-      section.prepend(innerTextEl);
-      innerTextEl.prepend(closeBtn);
-      closeBtn.innerHTML = '×';
-      section.classList.add('announcement-bar-section');
-      section.classList.add('site-wrapper');
-      abText.classList.remove('sqs-announcement-bar-text');
-
-      utils.loadImages(section);
-
-      //Global Init
-      if (Squarespace) Squarespace.initializeLayoutBlocks(Y)
-    }
+    // Priority: defaults < CSS custom properties < JS settings (window or passed)
     
-    function syncStyles(instance) {
-      let siteWrapper = document.querySelector('.site-wrapper'),
-          clone = instance.settings.sectionClone,
-          section = instance.settings.section,
-          dropzone = instance.settings.aBDropzone; 
-      
-      //Paragraph Color
-      let sectionColor = utils.getPropertyValue(section, 'color');
-      dropzone.style.setProperty('--color', sectionColor)
-
-      //Background Color
-      section.querySelector('.section-background').style.background = utils.getPropertyValue(section.querySelector('.section-background'), 'background-color');
+    // 1. Read CSS custom properties (override defaults)
+    const isOpenValue = WMMegaAnnouncementBar.getPropertyValue(section, "--is-open");
+    if (isOpenValue === "true") {
+      this.settings.isOpen = true;
+    } else if (isOpenValue === "false") {
+      this.settings.isOpen = false;
     }
 
-    function setFooterIndex(instance) {
-      let section = instance.settings.section,
-          index = Array.from(
-            section.parentElement.children
-          ).indexOf(section);
-      
-      instance.settings.footerIndex = index;
+    const mobileIsOpenValue = WMMegaAnnouncementBar.getPropertyValue(section, "--mobile-is-open");
+    if (mobileIsOpenValue === "true") {
+      this.settings.mobileIsOpen = true;
+    } else if (mobileIsOpenValue === "false") {
+      this.settings.mobileIsOpen = false;
     }
 
-    /*Remove Section if Jumping into Edit Mode*/
-    function returnSection(instance) {
-      let section = document.querySelector('.announcement-bar-section'),
-          aBDropzone = document.querySelector('.wm-custom-announcement-bar'),
-          innerText = document.querySelector('#announcement-bar-text-inner-id'),
-          button = innerText.querySelector('button'),
-          footer = document.querySelector('#footer-sections'),
-          index = instance.settings.footerIndex;
+    const clickableAreaValue = WMMegaAnnouncementBar.getPropertyValue(section, "--clickable-area");
+    if (clickableAreaValue.includes("true")) {
+      this.settings.clickableArea = true;
+    } else if (clickableAreaValue.includes("false")) {
+      this.settings.clickableArea = false;
+    }
+
+    // 2. Apply global JS settings from window (override CSS)
+    const globalSettings = window.wmMegaAnnouncementBarSettings || {};
+    if (Object.keys(globalSettings).length > 0) {
+      Object.assign(this.settings, globalSettings);
+    }
+
+    // 3. Apply passed settings (highest priority, override everything)
+    if (this._passedSettings && Object.keys(this._passedSettings).length > 0) {
+      Object.assign(this.settings, this._passedSettings);
+    }
+  }
+
+  syncStyles() {
+    const { section, aBDropzone, sectionBackground } = this.elements;
+    if (!aBDropzone || !section) return;
+
+    // Sync paragraph color
+    const sectionColor = WMMegaAnnouncementBar.getPropertyValue(section, "color");
+    aBDropzone.style.setProperty("--color", sectionColor);
+
+    // Sync background color
+    if (sectionBackground) {
+      const bgColor = WMMegaAnnouncementBar.getPropertyValue(sectionBackground, "background-color");
+      sectionBackground.style.background = bgColor;
+    }
+  }
+
+  moveSection() {
+    const { section, aBDropzone, abText, innerText, container, closeBtn } = this.elements;
+    if (!section || !aBDropzone || !container) return;
+
+    // Create placeholder for restoration
+    const placeholder = document.createElement("div");
+    placeholder.classList.add("wm-mega-announcement-placeholder");
+    placeholder.style.display = "none";
+      
+      // Insert placeholder before moving the section
+      section.parentNode.insertBefore(placeholder, section);
+      
+    // Store original position info
+    WMMegaAnnouncementBar.originalPositions.set(section, {
+        originalParent: section.parentNode,
+      placeholder,
+      abText,
+      innerText,
+    });
+
+    // Move section to announcement bar
+    aBDropzone.classList.add("wm-custom-announcement-bar", "loaded");
+    container.append(section);
+
+    // Move inner text into section
+    if (innerText) {
+      section.prepend(innerText);
+    }
+
+    // Move close button into inner text
+    if (closeBtn && innerText) {
+      innerText.prepend(closeBtn);
+      closeBtn.innerHTML = "×";
+    }
+
+    // Add site-wrapper class (announcement-bar-section already added in init)
+    section.classList.add("site-wrapper");
+
+    // Remove default class from abText
+    if (abText) {
+      abText.classList.remove("sqs-announcement-bar-text");
+    }
+
+    // Load images
+    WMMegaAnnouncementBar.loadImages(section);
+
+    // Initialize Squarespace layout blocks
+    if (typeof Squarespace !== "undefined" && typeof Y !== "undefined") {
+      Squarespace.initializeLayoutBlocks(Y);
+    }
+  }
+
+  buildDropdownControls() {
+    const { innerText, header } = this.elements;
+    if (!innerText) return;
+
+    // Create dropdown arrow button
+    const arrowBtn = document.createElement("button");
+    arrowBtn.className = "dropdown-arrow";
+    arrowBtn.innerHTML = this.settings.dropdownArrowHtml;
+    innerText.insertAdjacentElement("afterbegin", arrowBtn);
+
+    // Create clickable toggle area
+    const toggleArea = document.createElement("a");
+    toggleArea.href = "#";
+    toggleArea.className = "dropdown-toggle-area";
+    innerText.insertAdjacentElement("afterbegin", toggleArea);
+
+    // Store references
+    this.elements.dropdownArrow = arrowBtn;
+    this.elements.dropdownToggleArea = toggleArea;
+
+    // Add clickable area class to header if enabled
+    if (this.settings.clickableArea && header) {
+      header.classList.add("ab-entire-area");
+    }
+  }
+
+  setInitialState() {
+    const isMobile = window.innerWidth < 767;
+    const shouldBeOpen = isMobile ? this.settings.mobileIsOpen : this.settings.isOpen;
+
+    if (shouldBeOpen) {
+      this.openAccordion();
+    } else {
+      this.closeAccordion();
+    }
+  }
+
+  openAccordion() {
+    const { header, section, contentWrapper, innerText, dropdownArrow, dropdownToggleArea } = this.elements;
+    if (!header || !section || !contentWrapper || !innerText) return;
+
+    header.classList.add("announcement-bar-open");
+    contentWrapper.style.display = "flex";
+
+    // Calculate padding for content wrapper
+    const innerTextHeight = innerText.getBoundingClientRect().height;
+    const paddingBottom = parseInt(WMMegaAnnouncementBar.getPropertyValue(contentWrapper, "padding-bottom")) || 0;
+    contentWrapper.style.paddingTop = `${innerTextHeight + paddingBottom}px`;
+
+    // Set section height
+    const contentHeight = contentWrapper.getBoundingClientRect().height;
+    section.style.height = `${contentHeight}px`;
+
+    // Update classes
+    section.classList.add("open");
+    section.classList.remove("close");
+
+    if (dropdownArrow) {
+      dropdownArrow.classList.add("open");
+      dropdownArrow.classList.remove("close");
+    }
+
+    if (dropdownToggleArea) {
+      dropdownToggleArea.classList.add("open");
+      dropdownToggleArea.classList.remove("close");
+    }
+
+    WMMegaAnnouncementBar.emitEvent(":open", { el: this.el }, this.el);
+  }
+
+  closeAccordion() {
+    const { header, section, contentWrapper, innerText, dropdownArrow, dropdownToggleArea } = this.elements;
+    if (!header || !section || !contentWrapper || !innerText) return;
+
+    header.classList.remove("announcement-bar-open");
+    contentWrapper.style.display = "none";
+
+    // Set section height to just the inner text height
+    const innerTextHeight = innerText.getBoundingClientRect().height;
+    section.style.height = `${innerTextHeight}px`;
+
+    // Update classes
+    section.classList.add("close");
+    section.classList.remove("open");
+
+    if (dropdownArrow) {
+      dropdownArrow.classList.add("close");
+      dropdownArrow.classList.remove("open");
+    }
+
+    if (dropdownToggleArea) {
+      dropdownToggleArea.classList.add("close");
+      dropdownToggleArea.classList.remove("open");
+    }
+
+    WMMegaAnnouncementBar.emitEvent(":close", { el: this.el }, this.el);
+  }
+
+  toggleAccordion(e) {
+    if (!e.target.closest("#header")) return;
+    e.preventDefault();
+
+    const isOpen = e.target.closest("#header").classList.contains("announcement-bar-open");
+
+    if (isOpen) {
+      this.closeAccordion();
+    } else {
+      this.openAccordion();
+    }
+  }
+
+  bindEvents() {
+    const { dropdownArrow, dropdownToggleArea } = this.elements;
+
+    // Create bound handler for cleanup
+    this._eventHandlers.toggleAccordion = e => this.toggleAccordion(e);
+
+    if (dropdownToggleArea) {
+      dropdownToggleArea.addEventListener("click", this._eventHandlers.toggleAccordion);
+    }
+
+    if (dropdownArrow) {
+      dropdownArrow.addEventListener("click", this._eventHandlers.toggleAccordion);
+    }
+  }
+
+  destroy() {
+    const { section, header, contentWrapper, sectionBackground, dropdownArrow, dropdownToggleArea } = this.elements;
       
       if (!section) return;
+      
+    // Get stored position info
+    const positionInfo = WMMegaAnnouncementBar.originalPositions.get(section);
+      if (!positionInfo || !positionInfo.placeholder) return;
+      
+    const { placeholder, abText, innerText } = positionInfo;
+    const aBDropzone = document.querySelector(".wm-custom-announcement-bar");
 
-      instance.settings.abText.classList.add('sqs-announcement-bar-text');
-      section.insertAdjacentElement('beforebegin', innerText);
-      if (footer.children[index]) {
-        footer.children[index].insertAdjacentElement('beforebegin', section);
-        footer.children[index + 1].remove();
-      } else {
-        footer.append(section);
+    // Remove event listeners
+    if (dropdownToggleArea && this._eventHandlers.toggleAccordion) {
+      dropdownToggleArea.removeEventListener("click", this._eventHandlers.toggleAccordion);
+    }
+    if (dropdownArrow && this._eventHandlers.toggleAccordion) {
+      dropdownArrow.removeEventListener("click", this._eventHandlers.toggleAccordion);
+    }
+      
+      // Restore abText class
+      if (abText) {
+      abText.classList.add("sqs-announcement-bar-text");
       }
-      button.remove();
-      aBDropzone.classList.remove('wm-custom-announcement-bar');
-      section.classList.remove('announcement-bar-section');
-      section.classList.remove('close');
-      section.classList.remove('open');
-      section.style.height = '';
-      section.querySelector('.content-wrapper').style.display = '';
-      section.querySelector('.content-wrapper').style.paddingTop = '';
-      section.querySelector('.section-background').style.background = '';
+      
+      // Move innerText back before section
+    if (innerText && section.contains(innerText)) {
+      section.insertAdjacentElement("beforebegin", innerText);
+
+        // Remove added buttons from innerText
+      const addedButtons = innerText.querySelectorAll(".dropdown-arrow, .dropdown-toggle-area");
+        addedButtons.forEach(btn => btn.remove());
+      }
+      
+    // Restore section to original position
+      if (placeholder.parentNode) {
+        placeholder.parentNode.insertBefore(section, placeholder);
+        placeholder.remove();
+      }
+      
+    // Clean up dropzone
+      if (aBDropzone) {
+      aBDropzone.classList.remove("wm-custom-announcement-bar");
     }
 
-    function Constructor(el, options = {}) {
-      let instance = this;
+    // Clean up section classes and styles
+    section.classList.remove("announcement-bar-section", "site-wrapper", "close", "open");
+    section.style.height = "";
+    section.removeAttribute("data-wm-plugin");
 
-      // Add Elements Obj
-      this.settings = {
-        section: el,
-        footerIndex: 0,
-        abText: document.querySelector('.sqs-announcement-bar-text'),
-        get aBDropzone() {
-          return document.querySelector('.sqs-announcement-bar-dropzone')
-        },
-        get innerText() {
-          return this.aBDropzone.querySelector('#announcement-bar-text-inner-id');
-        },
-        get container() {
-          return this.aBDropzone.querySelector('.sqs-announcement-bar-text')
-        },
-        get closeBtn() {
-          return document.querySelector('.sqs-announcement-bar-close')
-        },
-        get dropdownArrow() {
-          return this.innerText.querySelector('.dropdown-arrow')
-        },
-        get dropdownToggleArea() {
-          return this.innerText.querySelector('.dropdown-toggle-area')
-        },
-        get header() {
-          return document.querySelector('#header');
-        },
-        get isOpen() {
-          let isOpen = utils.getPropertyValue(this.section, '--is-open');
-          isOpen === 'true' ? isOpen = true : isOpen = false;
-          return isOpen;
-        },
-        get mobileIsOpen() {
-          let mobileIsOpen = utils.getPropertyValue(this.section, '--mobile-is-open');
-          mobileIsOpen === 'true' ? mobileIsOpen = true : mobileIsOpen = false;
-          return mobileIsOpen;
-        },
-        get clickableArea() {
-          let val = utils.getPropertyValue(this.section, '--clickable-area');
-          val = val.includes('true') ? true : false;
-          return val;
-        }
-      };
-      
-      //Set Footer Index
-      setFooterIndex(this);
-      
-      //Sync Styles
-      syncStyles(this)
-      
-      //Move Section to Announcement Bar
-      moveSection(this);
-      
-      //Add Dropdown Arrow
-      addDropdownArrow(this);
+    // Clean up header
+    if (header) {
+      header.classList.remove("announcement-bar-open", "ab-entire-area");
+    }
 
-      //If In Backend, Watch for Edit Mode
-      const editModeObserver = new MutationObserver(function(mutations_list) {
-        mutations_list.forEach(function(mutation) {
-          let classList = document.body.classList;
-          if (mutation.attributeName === 'class' 
-              && classList.contains('sqs-edit-mode-active')){
-            editModeObserver.disconnect();
-            returnSection(instance);
+    // Clean up content wrapper
+    if (contentWrapper) {
+      contentWrapper.style.display = "";
+      contentWrapper.style.paddingTop = "";
+    }
+
+    // Clean up section background
+    if (sectionBackground) {
+      sectionBackground.style.background = "";
+    }
+
+    // Remove from original positions map
+    WMMegaAnnouncementBar.originalPositions.delete(section);
+
+    // Remove element reference
+    delete this.el.wmMegaAnnouncementBar;
+
+    WMMegaAnnouncementBar.emitEvent(":destroy", { el: this.el }, this.el);
+  }
+}
+
+// IIFE for auto-initialization
+(function () {
+  const pluginName = WMMegaAnnouncementBar.pluginName;
+
+  function initMegaAnnouncementBar() {
+    const aBDropzone = document.querySelector(".sqs-announcement-bar-dropzone");
+    const footerSections = document.querySelectorAll("#footer-sections .page-section");
+
+    if (!aBDropzone) return;
+
+    footerSections.forEach(section => {
+      // Check if section should be a mega announcement bar
+      const isMegaAnnouncement = WMMegaAnnouncementBar.getPropertyValue(section, "--mega-announcement");
+      if (isMegaAnnouncement !== "true") return;
+
+      // Skip if already initialized
+      if (section.wmMegaAnnouncementBar) return;
+
+      // Wait for announcement bar dropzone to be populated
+      const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+          if (mutation.addedNodes.length !== 0) {
+            // Settings are extracted internally (CSS props + window.wmMegaAnnouncementBarSettings)
+            new WMMegaAnnouncementBar(section);
+            observer.disconnect();
           }
         });
       });
-      if(window.self !== window.top) {
-        let options = {subtree: false, childList: false, attributes: true}
-        editModeObserver.observe(document.body, options);
-      }
-
-      el.wmMegaAnnouncement = {
-        initilized: true,
-        settings: this.settings,
-      };
-    }
-
-    return Constructor;
-  }());
-
-  
-  const aBDropzone = document.querySelector('.sqs-announcement-bar-dropzone'),
-        footerSections = document.querySelectorAll('#footer-sections .page-section');
-
-
-  footerSections.forEach(section => {
-    let isTrue = utils.getPropertyValue(section, '--mega-announcement');
-    if (isTrue !== 'true') return;
-    section.classList.add('announcement-bar-footer-section')
-
-    const observer = new MutationObserver(function(mutations_list) {
-      mutations_list.forEach(function(mutation) {
-        if (mutation.addedNodes.length !== 0) {
-          new MegaAnnouncementBar(section)
-          observer.disconnect();
-        }
-      });
-    });
+      
     observer.observe(aBDropzone, { 
       subtree: false, 
       childList: true, 
-      attributes: false
+        attributes: false,
     });
   });
   
-  window.setTimeout(function() {
-    aBDropzone?.classList.add('loaded')
+    // Mark dropzone as loaded after a short delay
+    setTimeout(() => {
+      aBDropzone?.classList.add("loaded");
   }, 300);
-}());
+  }
+
+  // Expose global API
+  window.WMMegaAnnouncementBar = {
+    init: initMegaAnnouncementBar,
+    deconstruct: () => WMMegaAnnouncementBar.deconstruct(),
+    get instances() {
+      return WMMegaAnnouncementBar.instances;
+    },
+  };
+
+  // Auto-initialize
+  initMegaAnnouncementBar();
+})();
