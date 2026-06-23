@@ -41,6 +41,10 @@ body.sqs-edit-mode-active #footer-sections .announcement-bar-footer-section:hove
   opacity: 0;
 }
 
+.sqs-announcement-bar :focus, .sqs-announcement-bar a:focus {
+  outline-color: var(--announcement-text-color, var(--color, currentColor));
+}
+
 .announcement-bar-section {
   min-height: unset !important;
   transition: height .3s ease;
@@ -140,6 +144,55 @@ div#announcement-bar-text-inner-id:after{
   display:none;
 }
 
+/*Collapse Button — last child of the section, hidden (and out of tab order) unless the panel is
+  open. Offset below the bar row (--wm-bar-height, set in JS) so it clears Squarespace's native
+  dismiss button. By default it is visually hidden and only revealed on keyboard focus; add
+  showCollapseButton:true / --show-collapse-button:true (→ .is-persistent) to keep it always visible.*/
+.wm-custom-announcement-bar .wm-announcement-collapse{
+  display:none;
+  place-items:center;
+  position:absolute;
+  top: var(--collapse-top, calc(var(--wm-bar-height, 0px) + 0.6em));
+  right: var(--collapse-right, 0.8em);
+  z-index:3;
+  width:2em;
+  height:2em;
+  min-width:24px;
+  min-height:24px;
+  padding:0;
+  background: var(--collapse-bkg, transparent);
+  border:none;
+  border-radius:50%;
+  color: var(--collapse-color, var(--color, currentColor));
+  line-height:0;
+  cursor:pointer;
+}
+.announcement-bar-section.open .wm-announcement-collapse{
+  display:grid;
+  opacity:0;
+  pointer-events:none;
+  transition: opacity .2s ease;
+}
+.announcement-bar-section.open .wm-announcement-collapse:focus-visible,
+.announcement-bar-section.open .wm-announcement-collapse.is-persistent{
+  opacity:1;
+  pointer-events:auto;
+}
+.wm-custom-announcement-bar .wm-announcement-collapse .wm-collapse-icon{
+  font-size:1.5em;
+  line-height:1;
+}
+.wm-custom-announcement-bar .wm-announcement-collapse svg{
+  width: var(--icon-size, 18px);
+  height: var(--icon-size, 18px);
+}
+
+/*Target size (WCAG 2.5.8): give the small arrow icon a 24px hit area*/
+.wm-custom-announcement-bar #announcement-bar-text-inner-id .dropdown-arrow{
+  min-width:24px;
+  min-height:24px;
+}
+
 /*Open Angle Transition*/
 @supports (d: path('M4 19 l28 26 L60 19')) {
   .wm-custom-announcement-bar #announcement-bar-text-inner-id path {
@@ -159,6 +212,15 @@ div#announcement-bar-text-inner-id:after{
   }
   .wm-custom-announcement-bar #announcement-bar-text-inner-id .open path {
     transform: rotate(180deg);
+  }
+}
+
+/*Respect reduced-motion preference (WCAG 2.3.3)*/
+@media (prefers-reduced-motion: reduce){
+  .announcement-bar-section,
+  .announcement-bar-section .content-wrapper,
+  .wm-custom-announcement-bar #announcement-bar-text-inner-id path{
+    transition-duration: 0.01ms !important;
   }
 }
 
