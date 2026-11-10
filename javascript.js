@@ -635,26 +635,32 @@ class WMMegaAnnouncementBar {
       const isMegaAnnouncement = WMMegaAnnouncementBar.getPropertyValue(section, "--mega-announcement");
       if (isMegaAnnouncement !== "true") return;
 
-      // Skip if already initialized
-      if (section.wmMegaAnnouncementBar) return;
+      // Build once the announcement bar is in the dropzone
+      // Settings are extracted internally (CSS props + window.wmMegaAnnouncementBarSettings)
+      const tryInit = () => {
+        if (section.wmMegaAnnouncementBar) return true;
+        if (!aBDropzone.querySelector(".sqs-announcement-bar")) return false;
+        new WMMegaAnnouncementBar(section);
+        return true;
+      };
 
-      // Wait for announcement bar dropzone to be populated
+      /* Squarespace now server-renders the announcement bar, so it may
+         already be in the page before this script runs. */
+      if (tryInit()) return;
+
+      /* Older rendering adds the bar into the dropzone after load. */
       const observer = new MutationObserver(mutations => {
-        mutations.forEach(mutation => {
-          if (mutation.addedNodes.length !== 0) {
-            // Settings are extracted internally (CSS props + window.wmMegaAnnouncementBarSettings)
-            new WMMegaAnnouncementBar(section);
-            observer.disconnect();
-          }
-        });
+        if (mutations.some(mutation => mutation.addedNodes.length !== 0) && tryInit()) {
+          observer.disconnect();
+        }
       });
-      
-    observer.observe(aBDropzone, { 
-      subtree: false, 
-      childList: true, 
+
+      observer.observe(aBDropzone, {
+        subtree: false,
+        childList: true,
         attributes: false,
+      });
     });
-  });
   
     // Mark dropzone as loaded after a short delay
     setTimeout(() => {
